@@ -1,12 +1,7 @@
 package main
 
 import "fmt"
-//import "github.com/gopherjs/gopherjs/js"
-//import "github.com/gopherjs/jquery"
 import "honnef.co/go/js/dom"
-
-//convenience:
-//var jQuery = jquery.NewJQuery
 
 type Context struct {
 	doc dom.Document
@@ -40,33 +35,35 @@ func (ctx Context) NewButton() Button {
 }
 
 
-// a button
-// sends true on down
-// false on up
+// a button sends true when clicked on its output channel
 type Button struct {
 	*dom.HTMLButtonElement
 	out chan bool
 }
 
-// a box that changes color
-
 func main() {
 	fmt.Println("Golang frontend")
 
-	// should make this an idiomatic initialization.
 	ctx := NewContext()
 
 	clickme := ctx.NewButton()
 	ctx.Append(clickme)
+
+	span := ctx.NewElement("span")
+	ctx.Append(span)
+	span.SetTextContent("0")
 	
 	clickme.SetTextContent("Click Me!")
 
 	// buttons are automatically wired up to output channels
 	go func() {
+		var i int = 0
 		for {
 			b := <- clickme.out
+			i += 1
 			print(b)
-			print("button clicked")
+			print("button clicked", i)
+			span.SetTextContent(fmt.Sprintf("%d", i))
 		}
 	} ()
 	
