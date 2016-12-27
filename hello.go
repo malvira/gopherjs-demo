@@ -13,9 +13,30 @@ type Context struct {
 	root dom.Element
 }
 
+func NewContext() Context {
+	var ctx Context
+	ctx.doc = dom.GetWindow().Document()
+	ctx.root = ctx.doc.DocumentElement()
+	return ctx
+}
+
+func (ctx Context) Append(e dom.Element) {
+	ctx.root.AppendChild(e)
+}
+
 func (ctx Context) NewElement (tag string) dom.Element {
 	e := ctx.doc.CreateElement(tag)
 	return e
+}
+
+func (ctx Context) NewButton() Button {
+	o := make(chan bool)
+	el := ctx.NewElement("button")
+	button := Button{el.(*dom.HTMLButtonElement), o}
+	button.AddEventListener("click", false,  func (e dom.Event) {
+		go func() { button.out <- true }()
+	})
+	return button
 }
 
 
@@ -30,25 +51,20 @@ type Button struct {
 // a box that changes color
 
 func main() {
-	fmt.Println("blahadfadsf")
+	fmt.Println("Golang frontend")
 
-	var ctx Context
-	ctx.doc = dom.GetWindow().Document()
-	ctx.root = ctx.doc.DocumentElement()
+	// should make this an idiomatic initialization.
+	ctx := NewContext()
 
-	butt := make(chan bool)
-	el := ctx.NewElement("button")
-	clickme := Button{el.(*dom.HTMLButtonElement), butt}
-
-	ctx.root.AppendChild(clickme)
+	clickme := ctx.NewButton()
+	ctx.Append(clickme)
+	
 	clickme.SetTextContent("Click Me!")
-	clickme.AddEventListener("click", false,  func (e dom.Event) {
-		go func() { clickme.out <- true }()
-	})
 
+	// buttons are automatically wired up to output channels
 	go func() {
 		for {
-			b := <- butt
+			b := <- clickme.out
 			print(b)
 			print("button clicked")
 		}
